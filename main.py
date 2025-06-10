@@ -1,5 +1,8 @@
 import streamlit as st
 import os
+from document_processing.extractor import extract_text_from_pdf, extract_text_from_ppt
+import openai  
+from bob import bob_responde
 
 st.set_page_config(
         page_title="Bob Educa",
@@ -7,6 +10,9 @@ st.set_page_config(
         layout="centered",
         initial_sidebar_state="expanded",
     )
+
+#openai.api_key = st.secrets.get("OPENAI_API_KEY")
+openai.api_key = st.secrets["OPENROUTER_API_KEY"]
 
 st.title("Bob-Educa 👨‍🎓")
 
@@ -35,3 +41,26 @@ if uploaded_file:
 
     st.success(f"Documento '{uploaded_file.name}' enviado com sucesso!")
     st.info("Bob vai estudar esse conteúdo e preparar o show... 🎬💥")
+    
+    if uploaded_file.name.endswith(".pdf"):
+        content = extract_text_from_pdf(file_path)
+    else:
+        content = extract_text_from_ppt(file_path)
+
+    if content:
+        st.markdown("### 👀 O Bob leu o seguinte conteúdo:")
+        st.text_area("Texto extraído:", content, height=300)
+
+        st.subheader("💬 Pergunte algo para o Bob:")
+        user_question = st.text_input("Digite sua pergunta aqui 👇")
+
+        if st.button("🎤 Perguntar para o Bob"):
+            if user_question.strip():
+                with st.spinner("Bob tá pensando... e xingando também 🧠💢"):
+                    response = bob_responde(user_question, content)
+                    st.markdown("### 🤬 Resposta do Bob:")
+                    st.success(response)
+            else:
+                st.warning("Digite uma pergunta antes de clicar!")
+    else:
+        st.error("❌ Não foi possível extrair texto do documento.")
